@@ -1,7 +1,4 @@
 .bin
-assets/*
-data/commands.json
-data/messages.yaml
 .vscode/
 .idea/
 *.log

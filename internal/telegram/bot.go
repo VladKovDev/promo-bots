@@ -1,7 +1,9 @@
 package bot
 
 import (
+	"fmt"
 	"log"
+	"mispilkabot/internal/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -43,6 +45,10 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) {
 
 	switch message.Command() {
 	case "start":
+		err := services.SetSchedules(SendMessage)
+		if err != nil {
+			fmt.Println("BUUUUUU")
+		}
 		msg.Text = "start command"
 	case "help":
 		msg.Text = "help command"
@@ -53,4 +59,8 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) {
 	if _, err := b.bot.Send(msg); err != nil {
 		log.Panic(err)
 	}
+}
+
+func SendMessage(chatID string) {
+	fmt.Println(chatID)
 }
