@@ -1,0 +1,9 @@
+.bin
+assets/*
+data/commands.json
+data/messages.yaml
+.vscode/
+.idea/
+*.log
+.env
+config/config.json
