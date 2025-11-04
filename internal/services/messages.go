@@ -2,17 +2,14 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
 type MessagesList []string
 
-type MessageMap map[string]Message
+type MessageMap map[string][]int
 
-type Message struct {
-	Timing []int8 `json:"timing"`
-	Name   string `json:"name"`
-}
 
 func getMessagesList() ([]string, error) {
 	var data MessageMap
@@ -35,4 +32,13 @@ func (data MessageMap) getList() (keys MessagesList) {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func GetMessage(messageName string)(string, error){
+	path := fmt.Sprintf("data/messages/%s.md", messageName)
+	data, err := os.ReadFile(path)
+	if err != nil{
+		return "", err
+	}
+	return  string(data), nil
 }
