@@ -22,7 +22,7 @@ func SetSchedules(sendMessage func(string)) error {
 	}
 	for k, v := range tasks {
 		sendTimeStr, ok := v.(string)
-		if !ok{
+		if !ok {
 			continue
 		}
 		setSchedule(sendTimeStr, k, sendMessage)
@@ -32,7 +32,7 @@ func SetSchedules(sendMessage func(string)) error {
 
 func setSchedule(sendTimeStr string, chatID string, sendMessage func(string)) {
 	sendTime, err := time.Parse(time.RFC3339, sendTimeStr)
-	if err != nil{
+	if err != nil {
 		return
 	}
 

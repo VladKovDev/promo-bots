@@ -73,3 +73,31 @@ func GetPerson(chatID string)(User, error){
 	user = data[chatID]
 	return user, err
 }
+
+func ChangePerson(chatID string, userData User){
+	var data UserMap
+	raw, err := os.ReadFile("data/users.json")
+	if err != nil {
+		fmt.Errorf("read file error %w", err)
+		return 
+	}
+
+	if err := json.Unmarshal(raw, &data); err != nil {
+		fmt.Errorf("unmarshal error %w", err)
+		return 
+	}
+
+	data[chatID] = userData
+
+	updated, err := json.MarshalIndent(data, "", " ")
+	if err != nil {
+		fmt.Errorf("marshal error %w", err)
+		return 
+	}
+
+	err = os.WriteFile("data/users.json", updated, 0644)
+	if err != nil {
+		fmt.Errorf("write file error %w", err)
+		return 
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"mispilkabot/internal/services"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -19,9 +20,12 @@ func NewBot(bot *tgbotapi.BotAPI) *Bot {
 func (b *Bot) Start() {
 	log.Printf("Authorized on account %s", b.bot.Self.UserName)
 
-	err := services.SetSchedules(SendMessage)
+	err := services.SetSchedules(func(chatID string) {
+		b.SendMessage(chatID)
+	})
+
 	if err != nil {
-		fmt.Println("BUUUUUU")
+		fmt.Println("SetSchedules error: %w", err)
 	}
 
 	b.handleUpdates(b.initUpdatesChanel())
@@ -63,6 +67,34 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) {
 	}
 }
 
-func SendMessage(chatID string) {
-	fmt.Println(chatID)
+func (b *Bot) SendMessage(chatID string) {
+	data, err := services.GetPerson(chatID)
+	if err != nil {
+		fmt.Errorf("person data fetching error: %w", err)
+		return
+	}
+
+	messagesList := data.MessagesList
+	n := len(messagesList)
+	last := messagesList[n-1]
+
+	text, err := services.GetMessage(last)
+	if err != nil {
+		fmt.Errorf("message fetching error: %w", err)
+		return
+	}
+
+	msg := tgbotapi.NewMessage(parseID(chatID), text)
+	if _, err := b.bot.Send(msg); err != nil {
+		log.Printf("send error to %s: %w", chatID, err)
+		return
+	}
+
+	data.MessagesList = messagesList[:n-1]
+	services.ChangePerson(chatID, data)
+}
+
+func parseID(s string) int64 {
+	id, _ := strconv.ParseInt(s, 10, 64)
+	return id
 }
