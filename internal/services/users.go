@@ -56,3 +56,20 @@ func (data UserMap) personData(message *tgbotapi.Message) {
 		MessagesList: messagesList,
 	}
 }
+
+func GetPerson(chatID string)(User, error){
+	var data UserMap
+	var user User
+
+	raw, err := os.ReadFile("data/users.json")
+	if err != nil {
+		return user, err
+	}
+
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return user, err
+	}
+
+	user = data[chatID]
+	return user, err
+}
