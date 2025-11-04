@@ -25,7 +25,7 @@ func (b *Bot) Start() {
 	})
 
 	if err != nil {
-		fmt.Println("SetSchedules error: %w", err)
+		fmt.Printf("SetSchedules error: %v", err)
 	}
 
 	b.handleUpdates(b.initUpdatesChanel())
@@ -55,43 +55,60 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) {
 	switch message.Command() {
 	case "start":
 		services.AddPerson(message)
-		msg.Text = "start command"
 	case "help":
-		msg.Text = "help command"
+		chatID := message.Chat.ID
+		services.SetNextSchedule(fmt.Sprint(chatID), b.SendMessage)
 	default:
 		msg.Text = "I don't know that command"
+		if _, err := b.bot.Send(msg); err != nil {
+			log.Panic(err)
+		}
 	}
 
-	if _, err := b.bot.Send(msg); err != nil {
-		log.Panic(err)
-	}
 }
 
 func (b *Bot) SendMessage(chatID string) {
 	data, err := services.GetPerson(chatID)
 	if err != nil {
-		fmt.Errorf("person data fetching error: %w", err)
+		log.Printf("person data fetching error: %v", err)
 		return
 	}
 
-	messagesList := data.MessagesList
-	n := len(messagesList)
-	last := messagesList[n-1]
+	if !data.IsMessaging{
+		return
+	}
+
+	last, err := lastMessage(data)
+	if err != nil{
+		return
+	}
 
 	text, err := services.GetMessage(last)
 	if err != nil {
-		fmt.Errorf("message fetching error: %w", err)
+		log.Printf("message fetching error: %v", err)
 		return
 	}
 
 	msg := tgbotapi.NewMessage(parseID(chatID), text)
 	if _, err := b.bot.Send(msg); err != nil {
-		log.Printf("send error to %s: %w", chatID, err)
+		log.Printf("send error to %s: %v", chatID, err)
 		return
 	}
 
-	data.MessagesList = messagesList[:n-1]
+	data.MessagesList = data.MessagesList[:len(data.MessagesList)-1]
 	services.ChangePerson(chatID, data)
+
+	services.SetNextSchedule(chatID, b.SendMessage)
+}
+
+func lastMessage(data services.User)(string, error){
+	messagesList := data.MessagesList
+	n := len(messagesList)
+	if n == 0{
+		return "", fmt.Errorf("messagesList is empty")
+	}
+	last := messagesList[n-1]
+	return last, nil
 }
 
 func parseID(s string) int64 {

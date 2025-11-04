@@ -3,16 +3,19 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type User struct {
-	UserName     string `json:"user_name"`
-	IsMessaging  bool   `json:"is_messaging"`
-	MessagesList []string  `json:"messages_list"`
+	UserName     string   `json:"user_name"`
+	RegTime      string   `json:"reg_time"`
+	IsMessaging  bool     `json:"is_messaging"`
+	MessagesList []string `json:"messages_list"`
 }
 
 type UserMap map[string]User
@@ -46,27 +49,32 @@ func AddPerson(message *tgbotapi.Message) error {
 
 func (data UserMap) personData(message *tgbotapi.Message) {
 	messagesList, err := getMessagesList()
-	if err != nil{
-		fmt.Errorf("get messagesList error %w", err)
+	t := time.Now()
+	strTime := t.Format(time.RFC3339)
+	if err != nil {
+		log.Printf("get messagesList error %v", err)
 	}
 	chatID := strconv.FormatInt(message.Chat.ID, 10)
 	data[chatID] = User{
 		UserName:     message.From.UserName,
+		RegTime:      strTime,
 		IsMessaging:  true,
 		MessagesList: messagesList,
 	}
 }
 
-func GetPerson(chatID string)(User, error){
+func GetPerson(chatID string) (User, error) {
 	var data UserMap
 	var user User
 
 	raw, err := os.ReadFile("data/users.json")
 	if err != nil {
+		log.Printf("readfile error: %v", err)
 		return user, err
 	}
 
 	if err := json.Unmarshal(raw, &data); err != nil {
+		log.Printf("unmarshal error: %v", err)
 		return user, err
 	}
 
@@ -74,30 +82,30 @@ func GetPerson(chatID string)(User, error){
 	return user, err
 }
 
-func ChangePerson(chatID string, userData User){
+func ChangePerson(chatID string, userData User) {
 	var data UserMap
 	raw, err := os.ReadFile("data/users.json")
 	if err != nil {
-		fmt.Errorf("read file error %w", err)
-		return 
+		log.Printf("read file error %v", err)
+		return
 	}
 
 	if err := json.Unmarshal(raw, &data); err != nil {
-		fmt.Errorf("unmarshal error %w", err)
-		return 
+		log.Printf("unmarshal error %v", err)
+		return
 	}
 
 	data[chatID] = userData
 
 	updated, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
-		fmt.Errorf("marshal error %w", err)
-		return 
+		log.Printf("marshal error %v", err)
+		return
 	}
 
 	err = os.WriteFile("data/users.json", updated, 0644)
 	if err != nil {
-		fmt.Errorf("write file error %w", err)
-		return 
+		log.Printf("write file error %v", err)
+		return
 	}
 }
