@@ -114,7 +114,16 @@ func (b *Bot) startCommand(message *tgbotapi.Message) {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 
-	msg.ReplyMarkup = dataButton("🔳Принять", "accept")
+	userData, err := services.GetPerson(fmt.Sprint(message.Chat.ID))
+	if err == nil{
+		if userData.IsMessaging{
+			msg.ReplyMarkup = dataButton("✅Принято", "decline")
+		}else{
+			msg.ReplyMarkup = dataButton("🔳Принять", "accept")
+		}
+	}else{
+		msg.ReplyMarkup = dataButton("🔳Принять", "accept")
+	}
 
 	if _, err := b.bot.Send(msg); err != nil {
 		log.Panic(err)
