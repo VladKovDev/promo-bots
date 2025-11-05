@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -11,14 +12,40 @@ type Task struct {
 	ChatID string `json:"chatID"`
 }
 
-func SetSchedules(sendMessage func(string)) error {
-	data, err := os.ReadFile("data/schedule_backup.json")
+func backUpSchedule(chatID string, date string) error {
+	raw, err := os.ReadFile("data/schedule_backup.json")
 	if err != nil {
 		return err
 	}
 
 	var tasks map[string]interface{}
-	if err := json.Unmarshal(data, &tasks); err != nil {
+	if err := json.Unmarshal(raw, &tasks); err != nil {
+		return err
+	}
+
+	tasks[chatID] = date
+
+	updated, err := json.MarshalIndent(tasks, "", " ")
+	if err != nil {
+		return fmt.Errorf("marshal error %w", err)
+	}
+
+	err = os.WriteFile("data/schedule_backup.json", updated, 0644)
+	if err != nil {
+		return fmt.Errorf("write file error %w", err)
+	}
+
+	return nil
+}
+
+func SetSchedules(sendMessage func(string)) error {
+	raw, err := os.ReadFile("data/schedule_backup.json")
+	if err != nil {
+		return err
+	}
+
+	var tasks map[string]interface{}
+	if err := json.Unmarshal(raw, &tasks); err != nil {
 		return err
 	}
 	for k, v := range tasks {
@@ -56,7 +83,7 @@ func SetNextSchedule(chatID string, sendMessage func(string)) {
 
 	messagesList := user.MessagesList
 	n := len(messagesList)
-	if n == 0{
+	if n == 0 {
 		return
 	}
 	last := messagesList[n-1]
@@ -68,10 +95,12 @@ func SetNextSchedule(chatID string, sendMessage func(string)) {
 	}
 
 	sendTimeStr, err := setSendTime(user.RegTime, timing)
-	if err != nil{
+	if err != nil {
 		log.Printf("sendTime error: %s", err)
 		return
 	}
+
+	backUpSchedule(chatID, sendTimeStr)
 
 	setSchedule(sendTimeStr, chatID, sendMessage)
 }
