@@ -20,6 +20,20 @@ type User struct {
 
 type UserMap map[string]User
 
+func getUsers()(data UserMap){
+	raw, err := os.ReadFile("data/users.json")
+	if err != nil {
+		log.Printf("read file error %v", err)
+		return
+	}
+
+	if err := json.Unmarshal(raw, &data); err != nil {
+		log.Printf("unmarshal error %v", err)
+		return
+	}
+	return data
+}
+
 func AddPerson(message *tgbotapi.Message) error {
 	var data UserMap
 
@@ -58,7 +72,7 @@ func (data UserMap) personData(message *tgbotapi.Message) {
 	data[chatID] = User{
 		UserName:     message.From.UserName,
 		RegTime:      strTime,
-		IsMessaging:  true,
+		IsMessaging:  false,
 		MessagesList: messagesList,
 	}
 }
@@ -82,22 +96,24 @@ func GetPerson(chatID string) (User, error) {
 	return user, err
 }
 
+func ChangeIsMessagingStatus(chatID string, status bool){
+	userData, err := GetPerson(chatID)
+	if err != nil{
+		log.Printf("get person error %v", err)
+		return
+	}
+
+	userData.IsMessaging = status
+
+	ChangePerson(chatID, userData)
+}
+
 func ChangePerson(chatID string, userData User) {
-	var data UserMap
-	raw, err := os.ReadFile("data/users.json")
-	if err != nil {
-		log.Printf("read file error %v", err)
-		return
-	}
+	users := getUsers()
 
-	if err := json.Unmarshal(raw, &data); err != nil {
-		log.Printf("unmarshal error %v", err)
-		return
-	}
+	users[chatID] = userData
 
-	data[chatID] = userData
-
-	updated, err := json.MarshalIndent(data, "", " ")
+	updated, err := json.MarshalIndent(users, "", " ")
 	if err != nil {
 		log.Printf("marshal error %v", err)
 		return
@@ -107,5 +123,15 @@ func ChangePerson(chatID string, userData User) {
 	if err != nil {
 		log.Printf("write file error %v", err)
 		return
+	}
+}
+
+func IsNewPerson(chatID string)bool{
+	users := getUsers()
+	_, ok := users[chatID]
+	if ok{
+		return false
+	}else{
+		return true
 	}
 }

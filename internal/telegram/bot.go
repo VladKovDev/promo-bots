@@ -64,6 +64,7 @@ func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery) {
 }
 
 func accept(b *Bot, callBack *tgbotapi.CallbackQuery) {
+	services.ChangeIsMessagingStatus(fmt.Sprint(callBack.From.ID), true)
 	edit := tgbotapi.NewEditMessageReplyMarkup(
 		callBack.From.ID,
 		callBack.Message.MessageID,
@@ -72,6 +73,7 @@ func accept(b *Bot, callBack *tgbotapi.CallbackQuery) {
 }
 
 func declaine(b *Bot, callBack *tgbotapi.CallbackQuery) {
+	services.ChangeIsMessagingStatus(fmt.Sprint(callBack.From.ID), false)
 	edit := tgbotapi.NewEditMessageReplyMarkup(
 		callBack.From.ID,
 		callBack.Message.MessageID,
@@ -97,6 +99,13 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) {
 }
 
 func (b *Bot) startCommand(message *tgbotapi.Message) {
+	if services.IsNewPerson(fmt.Sprint(message.Chat.ID)){
+		err := services.AddPerson(message)
+		if err != nil{
+			return
+		}
+	}
+
 	text, err := services.GetMessage("start")
 	if err != nil {
 		log.Printf("message fetching error: %v", err)
