@@ -101,3 +101,12 @@ func LastMessage(messagesList MessagesList) (string, error) {
 	last := messagesList[n-1]
 	return last, nil
 }
+
+func GetPhoto(messageName string) (string, error) {
+	path := fmt.Sprintf("assets/images/%v.PNG", messageName)
+	_, err := os.Stat(path)
+	if err == nil || !os.IsNotExist(err) {
+		return path, err
+	}
+	return "", err
+}

@@ -14,6 +14,8 @@ type Bot struct {
 	bot *tgbotapi.BotAPI
 }
 
+type Media []interface{}
+
 func NewBot(bot *tgbotapi.BotAPI) *Bot {
 	return &Bot{bot: bot}
 }
@@ -60,12 +62,12 @@ func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery) {
 	case "accept":
 		accept(b, callback)
 	// case "decline":
-		// declaine(b, callback)
+	// declaine(b, callback)
 	default:
 		callback := tgbotapi.NewCallback(callback.ID, "")
-        b.bot.Send(callback)
-        return
-    
+		b.bot.Send(callback)
+		return
+
 	}
 }
 
@@ -74,7 +76,7 @@ func accept(b *Bot, callBack *tgbotapi.CallbackQuery) {
 	edit := tgbotapi.NewEditMessageReplyMarkup(
 		callBack.From.ID,
 		callBack.Message.MessageID,
-		dataButton("✅Принято", "decline"))
+		dataButton("✅ Принято", "decline"))
 	b.bot.Send(edit)
 
 	services.SetSchedule(time.Now(), fmt.Sprint(callBack.From.ID), b.sendMessage)
@@ -85,7 +87,7 @@ func declaine(b *Bot, callBack *tgbotapi.CallbackQuery) {
 	edit := tgbotapi.NewEditMessageReplyMarkup(
 		callBack.From.ID,
 		callBack.Message.MessageID,
-		dataButton("🔳Принять", "accept"))
+		dataButton("🔲 Принимаю", "accept"))
 	b.bot.Send(edit)
 }
 
@@ -118,22 +120,33 @@ func (b *Bot) startCommand(message *tgbotapi.Message) {
 		log.Printf("message fetching error: %v", err)
 		return
 	}
-
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	// media := getMedia()
+	// group := tgbotapi.MediaGroupConfig{
+	// 	ChatID: message.Chat.ID,
+	// 	Media:  media,
+	// }
 
 	userData, err := services.GetPerson(fmt.Sprint(message.Chat.ID))
 	if err == nil {
 		if userData.IsMessaging {
-			msg.ReplyMarkup = dataButton("✅Принято", "decline")
+			msg.ReplyMarkup = dataButton("✅ Принято", "decline")
 		} else {
-			msg.ReplyMarkup = dataButton("🔳Принять", "accept")
+			msg.ReplyMarkup = dataButton("🔲 Принимаю", "accept")
 		}
 	} else {
-		msg.ReplyMarkup = dataButton("🔳Принять", "accept")
+		msg.ReplyMarkup = dataButton("🔲 Принимаю", "accept")
 	}
 
+	// _, err = b.bot.SendMediaGroup(group)
+	// if err != nil {
+	// 	log.Printf("send mediagroup error: %s", err)
+	// 	return
+	// }
+	msg.ParseMode = "HTML"
 	if _, err := b.bot.Send(msg); err != nil {
-		log.Panic(err)
+		log.Printf("message send error: %s", err)
+		return
 	}
 
 }
@@ -160,17 +173,31 @@ func (b *Bot) sendMessage(chatID string) {
 		return
 	}
 
-	msg := tgbotapi.NewMessage(parseID(chatID), text)
-
 	url, buttonText, err := services.GetURLButton(last)
 	if err != nil {
 		return
 	}
-	if !(url == "" || buttonText == "") {
-		keyboard := linkButton(url, buttonText)
-		msg.ReplyMarkup = keyboard
-	}
+	var msg tgbotapi.Chattable
+	photoPath, err := services.GetPhoto(last)
+	if err != nil {
+		m := tgbotapi.NewMessage(parseID(chatID), text)
+		m.ParseMode = "HTML"
+		if !(url == "" || buttonText == "") {
+			keyboard := linkButton(url, buttonText)
+			m.ReplyMarkup = keyboard
+		}
+		msg = m
 
+	} else {
+		p := tgbotapi.NewPhoto(parseID(chatID), tgbotapi.FilePath(photoPath))
+		p.Caption = text
+		p.ParseMode = "HTML"
+		if !(url == "" || buttonText == "") {
+			keyboard := linkButton(url, buttonText)
+			p.ReplyMarkup = keyboard
+		}
+		msg = p
+	}
 	if _, err := b.bot.Send(msg); err != nil {
 		log.Printf("send error to %s: %v", chatID, err)
 		return
@@ -202,4 +229,17 @@ func dataButton(text string, calldata string) tgbotapi.InlineKeyboardMarkup {
 func parseID(s string) int64 {
 	id, _ := strconv.ParseInt(s, 10, 64)
 	return id
+}
+
+func getMedia() (media Media) {
+	files := []string{
+		"assets/documents/ОФЕРТА.docx",
+		"assets/documents/Политика конфиденциальности.docx",
+		"assets/documents/Согласие ТГ БОТ.docx",
+	}
+	for _, f := range files {
+		media = append(media, tgbotapi.NewInputMediaDocument(tgbotapi.FilePath(f)))
+	}
+
+	return media
 }
