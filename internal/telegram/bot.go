@@ -5,6 +5,7 @@ import (
 	"log"
 	"mispilkabot/internal/services"
 	"strconv"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -93,8 +94,8 @@ func declaine(b *Bot, callBack *tgbotapi.CallbackQuery) {
 
 func (b *Bot) handleCommand(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "")
-
-	switch message.Command() {
+	lowerCommand := strings.ToLower(message.Command())
+	switch lowerCommand {
 	case "start":
 		b.startCommand(message)
 	case "restart":

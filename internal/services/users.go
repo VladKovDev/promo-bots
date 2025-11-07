@@ -26,7 +26,7 @@ func AddUser(message *tgbotapi.Message) error {
 
 	data.userData(message)
 
-	if err = WriteJSONRetry[UserMap]("data/users.json", data, 3); err != nil {
+	if err = WriteJSONRetry("data/users.json", data, 3); err != nil {
 		return err
 	}
 	return nil
@@ -85,7 +85,7 @@ func ChangeUser(chatID string, userData User) error {
 
 	users[chatID] = userData
 
-	if err := WriteJSONRetry[UserMap]("data/users.json", users, 3); err != nil {
+	if err := WriteJSONRetry("data/users.json", users, 3); err != nil {
 		return err
 	}
 	return nil

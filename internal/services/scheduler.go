@@ -1,21 +1,15 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 	"time"
 )
 
 type Tasks map[string]string
 
-func getScheduleBackup() (tasks Tasks, error error) {
-	raw, err := os.ReadFile("data/schedule_backup.json")
+func getScheduleBackup() (Tasks, error) {
+	tasks, err := ReadJSONRetry[Tasks]("data/schedule_backup.json", 3)
 	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(raw, &tasks); err != nil {
 		return nil, err
 	}
 	return tasks, nil
@@ -26,32 +20,19 @@ func backUpSchedule(chatID string, date time.Time) error {
 	if err != nil {
 		return err
 	}
-
 	dateStr := date.Format(time.RFC3339)
-
 	tasks[chatID] = dateStr
 
-	updated, err := json.MarshalIndent(tasks, "", " ")
+	err = WriteJSONRetry("data/schedule_backup.json", tasks, 3)
 	if err != nil {
-		return fmt.Errorf("marshal error %w", err)
+		return err
 	}
-
-	err = os.WriteFile("data/schedule_backup.json", updated, 0644)
-	if err != nil {
-		return fmt.Errorf("write file error %w", err)
-	}
-
 	return nil
 }
 
 func SetSchedules(sendMessage func(string)) error {
-	raw, err := os.ReadFile("data/schedule_backup.json")
+	tasks, err := ReadJSONRetry[Tasks]("data/schedule_backup.json", 3)
 	if err != nil {
-		return err
-	}
-
-	var tasks Tasks
-	if err := json.Unmarshal(raw, &tasks); err != nil {
 		return err
 	}
 	for k, v := range tasks {
@@ -77,10 +58,11 @@ func SetSchedule(sendTime time.Time, chatID string, sendMessage func(string)) {
 	})
 }
 
-func getDate(chatID string) (date time.Time, error error) {
+func getDate(chatID string) (time.Time, error) {
+	var date time.Time
 	tasks, err := getScheduleBackup()
 	if err != nil {
-		return date, nil
+		return date, err
 	}
 	dateStr, ok := tasks[chatID]
 	if ok {
@@ -94,27 +76,22 @@ func getDate(chatID string) (date time.Time, error error) {
 	}
 }
 
-func SetNextSchedule(chatID string, messageName string, sendMessage func(string)) {
+func SetNextSchedule(chatID string, messageName string, sendMessage func(string)) error {
 	timing, err := GetTiming(messageName)
 	if err != nil {
-		log.Printf("timing fetching error: %s", err)
-		return
+		return fmt.Errorf("failed to set next schedule: %w", err)
 	}
 	now := time.Now()
-
-	nextDate, err := setSendTime(now, timing)
-	if err != nil {
-		log.Printf("sendTime error: %s", err)
-		return
+	nextDate := setSendTime(now, timing)
+	if err := backUpSchedule(chatID, nextDate); err != nil {
+		return err
 	}
-
-	backUpSchedule(chatID, nextDate)
-
 	SetSchedule(nextDate, chatID, sendMessage)
+	return nil
 }
 
-func setSendTime(now time.Time, timing []int) (time.Time, error) {
+func setSendTime(now time.Time, timing []int) time.Time {
 	nextDate := now.Add(time.Duration(timing[0])*time.Hour +
 		time.Duration(timing[1])*time.Minute)
-	return nextDate, nil
+	return nextDate
 }

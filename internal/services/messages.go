@@ -1,9 +1,7 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -20,30 +18,24 @@ type Messages struct {
 	Messages     MessageMap   `json:"messages"`
 }
 
-func getMessages() (messages Messages, error error) {
-	raw, err := os.ReadFile("data/messages.json")
+func getMessages() (Messages, error) {
+	messages, err := ReadJSONRetry[Messages]("data/messages.json", 3)
 	if err != nil {
-		log.Printf("readfile error: %v", err)
-		return messages, err
-	}
-
-	err = json.Unmarshal(raw, &messages)
-	if err != nil {
-		log.Printf("unmarshal error: %v", err)
 		return messages, err
 	}
 	return messages, nil
 }
 
-func getMessageMap() (messageMap MessageMap, error error) {
+func getMessageMap() (MessageMap, error) {
 	messages, err := getMessages()
 	if err != nil {
-		return messageMap, err
+		return messages.Messages, err
 	}
 	return messages.Messages, nil
 }
 
-func getMessageData(messageName string) (messageData MessageData, error error) {
+func getMessageData(messageName string) (MessageData, error) {
+	var messageData MessageData
 	messageMap, err := getMessageMap()
 	if err != nil {
 		return messageData, err
@@ -85,7 +77,7 @@ func GetTiming(messageName string) ([]int, error) {
 	return messageData.Timing, nil
 }
 
-func GetURLButton(messageName string) (URL string, text string, error error) {
+func GetURLButton(messageName string) (string, string, error) {
 	messageData, err := getMessageData(messageName)
 	if err != nil {
 		return "", "", err
@@ -107,7 +99,7 @@ func GetPhoto(messageName string) (string, error) {
 	path := fmt.Sprintf("assets/images/%v.PNG", messageName)
 	_, err := os.Stat(path)
 	if err == nil || !os.IsNotExist(err) {
-		return path, err
+		return path, nil
 	}
-	return "", err
+	return "", fmt.Errorf("failed to get photo: %w", err)
 }

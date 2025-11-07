@@ -26,7 +26,7 @@ func WriteJSON[T any](path string, data T) error {
 		return fmt.Errorf("marshal JSON file %q: %w", path, err)
 	}
 
-	err = os.WriteFile("data/users.json", raw, 0644)
+	err = os.WriteFile(path, raw, 0644)
 	if err != nil {
 		return fmt.Errorf("write JSON file %q: %w", path, err)
 	}
