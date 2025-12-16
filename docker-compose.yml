@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: promo-bots
+    environment:
+      POSTGRES_USER: promobot
+      POSTGRES_PASSWORD: promobot
+      POSTGRES_DB: promo_bot
+    ports:
+      - "5444:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - promobot-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  promobot-network:
+    driver: bridge
