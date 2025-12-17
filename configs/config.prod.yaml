@@ -1,0 +1,9 @@
+database:
+  port: 5432
+  name: promo_bots
+  sslmode: disable
+  max_open_conns: 5
+
+logger:
+  level: info
+  pretty: false

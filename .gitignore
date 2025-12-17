@@ -1,5 +1,5 @@
 # Binary
-.bin/
+bin
 *.exe
 *.exe~
 *.dll
