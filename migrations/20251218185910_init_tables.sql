@@ -20,12 +20,12 @@ CREATE TABLE telegram_bots (
     bot_id BIGINT,
     username TEXT NOT NULL,
     first_name TEXT,
-    encryped_token TEXT NOT NULL, 
+    encrypted_token TEXT NOT NULL, 
     "status" TEXT NOT NULL,
     last_error TEXT,
     last_checked_at TIMESTAMP,
     revoked_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -34,10 +34,10 @@ CREATE TABLE scripts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "name" TEXT UNIQUE NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    private_group_id UUID
+    private_group_id UUID,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 -- Таблица сообщений
