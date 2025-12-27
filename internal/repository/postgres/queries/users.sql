@@ -89,6 +89,12 @@ WHERE
     id = @id
     AND is_active = TRUE RETURNING id;
 
+-- name: DeleteUser :exec
+DELETE FROM
+    users
+WHERE
+    id = @id;
+
 -- name: ListUsers :many
 SELECT
     id,

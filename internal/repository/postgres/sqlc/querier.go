@@ -14,6 +14,7 @@ type Querier interface {
 	CountUsers(ctx context.Context) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateUser(ctx context.Context, id pgtype.UUID) (pgtype.UUID, error)
+	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByTelegramID(ctx context.Context, telegramID *int64) (User, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
